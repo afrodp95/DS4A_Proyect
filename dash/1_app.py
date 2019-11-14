@@ -12,7 +12,7 @@ import dash_table
 ##############
 ### Import Clean Data
 
-df = pd.read_csv("airports_clean.csv.gz",encoding='UTF-8',parse_dates=['day_hour',],index_col=0)
+df = pd.read_csv("dash/airports_clean.csv.gz",encoding='UTF-8',parse_dates=['day_hour',],index_col=0)
 df.columns
 
 df.dtypes
