@@ -116,27 +116,4 @@ for airport in airports:
     df_list.append(df2_full)
 
 df = pd.concat(df_list,axis=0,ignore_index=True)
-
-#############################
-#### Exportar Solo Bogotá V1
-
-#print('Selecting Bogotá V1')
-#df = df[df['station']=='SKBO']
-
-#############################
-#### Exportar Solo Ultimos 2 Meses de Info
-
-print('Selecting Only last Two Months of Info V1')
-
-df['day_hour'] = pd.to_datetime(df['day_hour'])
-
-df = df[df['day_hour']>'2019-09']
-
-########################################
-##### Exportar A csv para consumirla #####
-
-print('Writing to AWS DB')
-
-df.to_csv("airports_clean.csv.gz",encoding='UTF-8')
-
-print('End... Starting App')
+df.to_sql(name='reads_clean', con=engine, if_exists = 'append', index=False, chunksize=10000)
