@@ -109,8 +109,6 @@ for airport in airports:
     df2_imp = pd.DataFrame(df2_imp,columns=numeric_cols)
     df2_imp['day_hour'] = hora
     df2_imp['station'] = airport
-    df2_imp['lat'] = lati
-    df2_imp['lon'] = longi
     df2_full = pd.concat([df_empty,df2_imp],axis=1)
     print('Data for {} imputed'.format(airport))
     df_list.append(df2_full)
