@@ -56,7 +56,7 @@ stations=["SKAR","SKQL","SKBO","SKBG","SKCL","SKCC","SKCG","SKPE","SKSP","SKSM",
 
 #iniciar la descarga por cada estacion
 df = pd.DataFrame()
-for station in station:
+for station in stations:
     uri = "%s&station=%s" % (service, station)
     print("Downloading: %s" % (station,))
     data = download_data(uri)
