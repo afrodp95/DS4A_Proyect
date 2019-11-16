@@ -113,3 +113,4 @@ for airport in airports:
 
 df = pd.concat(df_list,axis=0,ignore_index=True)
 df.to_sql(name='table_prueba', con=engine, if_exists = 'append', index=False, chunksize=10000)
+#modificacion
