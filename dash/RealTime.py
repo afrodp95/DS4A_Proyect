@@ -24,10 +24,10 @@ start=datetime.datetime.now()
 #La fecha final es manana a las 00:00
 
 end=start + timedelta(days=1)
-#startts = datetime.datetime(start.year,start.month,start.day)
-#endts = datetime.datetime(end.year,end.month,end.day)
-startts = datetime.datetime(2017,1,1)
-endts = datetime.datetime(2019,11,17)
+startts = datetime.datetime(start.year,start.month,start.day)
+endts = datetime.datetime(end.year,end.month,end.day)
+#startts = datetime.datetime(2019,11,1)
+#endts = datetime.datetime(2019,11,17)
 
 ##################################
 #funcion para descargar la data
@@ -52,7 +52,8 @@ service += startts.strftime("year1=%Y&month1=%m&day1=%d&")
 service += endts.strftime("year2=%Y&month2=%m&day2=%d&")
 #definicion de network y estaciones de donde descargaremos
 networks = ["CO__ASOS"]
-stations=["SKAR","SKQL","SKBO","SKBG","SKCL","SKCC","SKCG","SKPE","SKSP","SKSM","SKMR"]
+#stations=["SKAR","SKQL","SKBO","SKBG","SKCL","SKCC","SKCG","SKPE","SKSP","SKSM","SKMR"]
+stations=["SKAR"]
 
 #iniciar la descarga por cada estacion
 df = pd.DataFrame()
@@ -68,8 +69,6 @@ for station in stations:
 #eliminacion de campos no usados
 del df['metar']
 del df['wxcodes']
-del df['lon']
-del df['lat']
 del df['skyc2']
 del df['skyc3']
 del df['skyc4']
