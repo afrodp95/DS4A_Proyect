@@ -135,7 +135,7 @@ df = df[df['day_hour']>'2019-09']
 ########################################
 ##### Exportar A csv para consumirla #####
 
-print('Writing to AWS')
+print('Writing to AWS DB')
 
 df.to_csv("airports_clean.csv.gz",encoding='UTF-8')
 
