@@ -22,9 +22,12 @@ SERVICE = "http://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?"
 #La fecha iniciar es el dia de hoy a las 00:00
 start=datetime.datetime.now()
 #La fecha final es manana a las 00:00
+
 end=start + timedelta(days=1)
-startts = datetime.datetime(start.year,start.month,start.day)
-endts = datetime.datetime(end.year,end.month,end.day)
+#startts = datetime.datetime(start.year,start.month,start.day)
+#endts = datetime.datetime(end.year,end.month,end.day)
+startts = datetime.datetime(2017,1,1)
+endts = datetime.datetime(2019,11,17)
 
 ##################################
 #funcion para descargar la data
