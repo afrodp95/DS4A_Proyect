@@ -1,0 +1,4 @@
+## Ignore local settings
+.vscode/
+## Ignore Sensible Data 
+proyect_settings.py
