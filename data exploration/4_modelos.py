@@ -155,16 +155,15 @@ Y_test = test['vsby']
 X_test = test.drop(['day_hour','vsby'],axis=1)
 
 ##### Mejor Parámetro
-forest.best_params_
-### {'max_depth': 8}
-
+xgb.best_params_
+### {'bootstrap': False, 'criterion': 'gini', 'eta': 0.8759326347420947, 'max_depth': 4, 'max_features': 9, 'min_samples_split': 8, 'subsample': 0.8021476420801591}
 
 #### Mejor Error Cuadratico Medio
-forest.best_score_
-## 0.23321001075392683
+xgb.best_score_
+## 0.2450765273697973
 
 #### Prediccion
-Y_pred = forest.predict(X_test)
+Y_pred = xgb.predict(X_test)
 
 #### MSE de test
 test_mse = mean_squared_error(Y_test,Y_pred)
@@ -177,7 +176,7 @@ plt.legend()
 plt.xlabel('Date')
 plt.ylabel('Horizontal Visibility')
 plt.xticks(rotation=30)
-plt.title("100 Trees 8 Max Depth Random Forest \n Training MSE: {:0.3f} Test MSE: {:0.3f}".format(forest.best_score_,test_mse))
+plt.title("XGBoost \n Training MSE: {:0.3f} Test MSE: {:0.3f}".format(xgb.best_score_,test_mse))
 plt.show()
 
 
