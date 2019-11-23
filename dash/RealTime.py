@@ -52,8 +52,13 @@ service += startts.strftime("year1=%Y&month1=%m&day1=%d&")
 service += endts.strftime("year2=%Y&month2=%m&day2=%d&")
 #definicion de network y estaciones de donde descargaremos
 networks = ["CO__ASOS"]
+<<<<<<< HEAD
+stations=["SKAR","SKQL","SKBO","SKBG","SKCL","SKCC","SKCG","SKPE","SKSP","SKSM","SKMR"]
+#stations=["SKAR"]
+=======
 #stations=["SKAR","SKQL","SKBO","SKBG","SKCL","SKCC","SKCG","SKPE","SKSP","SKSM","SKMR"]
 stations=["SKAR"]
+>>>>>>> a4ead727ba6787fde881cd2cfc006aac1eac9901
 
 #iniciar la descarga por cada estacion
 df = pd.DataFrame()
@@ -77,7 +82,7 @@ del df['skyl3']
 del df['skyl4']
 del df['ice_accretion_1hr']
 del df['ice_accretion_3hr']
-del df['ice_accretion_5hr']
+del df['ice_accretion_6hr']
 del df['peak_wind_gust']
 del df['peak_wind_drct']
 del df['peak_wind_time']
@@ -86,10 +91,10 @@ print(df.shape)
 #creacion del motor de base de datos en postgres
 engine = create_engine('postgresql://ds4a_18:ds4a2019@ds4a18.cmlpaj0d1yqv.us-east-2.rds.amazonaws.com:5432/Airports_ds4a')
 #subir DataFrame a la base de datos
-df.to_sql(name='DataRaw', con=engine, if_exists = 'append', index=False, chunksize=10000)
+df.to_sql(name='dataraw', con=engine, if_exists = 'append', index=False, chunksize=10000)
 #eliminacion de duplicados con el query. Esta como una funcion en la base de datos
 engine.execute('select delete_duplicates()')
 #eliminacion de datos nulos (donde VALID es nulo)
-engine.execute('delete from DataRaw where valid is null')
+engine.execute('delete from dataraw where valid is null')
 print('FINISH')
 
