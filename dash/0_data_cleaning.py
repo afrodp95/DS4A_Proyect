@@ -3,7 +3,7 @@
 import pandas as pd 
 import numpy as np
 import plotly.graph_objects as go
-import datetime
+from datime import datetime, timedelta
 import time
 from sqlalchemy import create_engine
 
@@ -14,7 +14,7 @@ engine = create_engine('postgresql://ds4a_18:ds4a2019@ds4a18.cmlpaj0d1yqv.us-eas
 var = pd.read_sql("SELECT count(1) from dataraw", engine.connect(), parse_dates=('valid',))
 df = pd.read_sql("SELECT * from dataraw", engine.connect(), parse_dates=('valid',))
 df = df.dropna(subset=['valid'],axis=0)
-df['DateTime'] = df['valid'].apply(lambda x: datetime.datetime.strptime(str(x), "%Y-%m-%d %H:%M:%S")- timedelta(hours=3))
+df['DateTime'] = df['valid'].apply(lambda x: datetime.strptime(str(x), "%Y-%m-%d %H:%M:%S")- timedelta(hours=3))
 df.replace(['M',None],np.nan,inplace=True)
 
 
@@ -32,12 +32,9 @@ df = df[cols]
 ###################
 #### Convert to Numeric (in sql are all text)
 
-<<<<<<< HEAD
 numeric_cols = ['lon','lat','tmpf', 'dwpf', 'relh', \
 'drct', 'sknt', 'alti', 'vsby', 'skyl1', 'feel']
-=======
 numeric_cols = ['tmpf', 'dwpf', 'relh', 'drct', 'sknt', 'alti', 'vsby', 'skyl1', 'feel']
->>>>>>> a4ead727ba6787fde881cd2cfc006aac1eac9901
 
 for col in numeric_cols:
     df[col] = df[col].astype(float)
@@ -48,7 +45,7 @@ for col in numeric_cols:
 
 print('Finding Missing Data Intervals')
 
-df['day_hour'] = df['DateTime'].apply(lambda x: datetime.datetime.strftime(x, "%Y-%m-%d %H"))
+df['day_hour'] = df['DateTime'].apply(lambda x: datetime.strftime(x, "%Y-%m-%d %H"))
 
 df = df.groupby(['station', 'day_hour']).mean().reset_index() ## Se pierde p01i skyc1 porque son categóricas
 
