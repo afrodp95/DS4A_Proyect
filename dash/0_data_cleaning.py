@@ -3,7 +3,7 @@
 import pandas as pd 
 import numpy as np
 import plotly.graph_objects as go
-import datetime
+from datime import datetime, timedelta
 import time
 from sqlalchemy import create_engine
 
@@ -11,10 +11,10 @@ from sqlalchemy import create_engine
 ### Fecth Raw data from AWS DB
 
 engine = create_engine('postgresql://ds4a_18:ds4a2019@ds4a18.cmlpaj0d1yqv.us-east-2.rds.amazonaws.com:5432/Airports_ds4a')
-var = pd.read_sql("SELECT count(1) from reads2_raw", engine.connect(), parse_dates=('valid',))
-df = pd.read_sql("SELECT * from reads2_raw", engine.connect(), parse_dates=('valid',))
+var = pd.read_sql("SELECT count(1) from dataraw", engine.connect(), parse_dates=('valid',))
+df = pd.read_sql("SELECT * from dataraw", engine.connect(), parse_dates=('valid',))
 df = df.dropna(subset=['valid'],axis=0)
-df['DateTime'] = df['valid'].apply(lambda x: datetime.datetime.strptime(str(x), "%Y-%m-%d %H:%M:%S"))
+df['DateTime'] = df['valid'].apply(lambda x: datetime.strptime(str(x), "%Y-%m-%d %H:%M:%S")- timedelta(hours=3))
 df.replace(['M',None],np.nan,inplace=True)
 
 
@@ -32,6 +32,8 @@ df = df[cols]
 ###################
 #### Convert to Numeric (in sql are all text)
 
+numeric_cols = ['lon','lat','tmpf', 'dwpf', 'relh', \
+'drct', 'sknt', 'alti', 'vsby', 'skyl1', 'feel']
 numeric_cols = ['tmpf', 'dwpf', 'relh', 'drct', 'sknt', 'alti', 'vsby', 'skyl1', 'feel']
 
 for col in numeric_cols:
@@ -43,7 +45,7 @@ for col in numeric_cols:
 
 print('Finding Missing Data Intervals')
 
-df['day_hour'] = df['DateTime'].apply(lambda x: datetime.datetime.strftime(x, "%Y-%m-%d %H"))
+df['day_hour'] = df['DateTime'].apply(lambda x: datetime.strftime(x, "%Y-%m-%d %H"))
 
 df = df.groupby(['station', 'day_hour']).mean().reset_index() ## Se pierde p01i skyc1 porque son categóricas
 
@@ -112,5 +114,5 @@ for airport in airports:
     df_list.append(df2_full)
 
 df = pd.concat(df_list,axis=0,ignore_index=True)
-df.to_sql(name='table_prueba', con=engine, if_exists = 'append', index=False, chunksize=10000)
+df.to_sql(name='dataclean', con=engine, if_exists = 'append', index=False, chunksize=10000)
 #modificacion
