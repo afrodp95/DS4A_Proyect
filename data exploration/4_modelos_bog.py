@@ -1,3 +1,7 @@
+##############################################################
+#### Modelos Para El Aeropuerto Internacional el Dorado ######
+##############################################################
+
 #####################
 # Importar librerías
 
@@ -16,9 +20,9 @@ import seaborn as sns
 
 df = pd.read_csv('data exploration/bog_clean.csv.gz',low_memory=False,index_col=0,parse_dates=['day_hour',]).reset_index(drop=True)
 
-###########################
-#### MODELOS PARA LA VISIBILIDAD HORIZONTAL (vsby)
-##########################
+#######################################################
+#### MODELOS PARA LA VISIBILIDAD HORIZONTAL (vsby) ####
+#######################################################
 
 ###############
 #### Ordenar los datos de Menos a Mas Reciente Para Crear el Lag
@@ -36,27 +40,36 @@ numeric_cols = ['tmpf','dwpf','relh','drct','sknt','alti','skyl1']
 df_num = df[numeric_cols]
 
 ###############
-### Rezagar la Info una, seis y doce horas para crear un data frame 
-df1 = df_num.shift(periods=1)
-df1.columns = [col+'_1' for col in df1.columns] 
-df2 = df_num.shift(periods=6)
-df2.columns = [col+'_2' for col in df2.columns] 
-df3 = df_num.shift(periods=12)
-df3.columns = [col+'_3' for col in df3.columns] 
+### Rezagar la Info hasta 12 horas en intervalos de 2 horas para crear un data frame 
+
+lagged_lists = []
+
+for i in [1,2,4,6,8,10,12]:
+    lag = df_num.shift(periods=1)
+    lag.columns = [col+'_{}'.format(i) for col in lag.columns] 
+    lagged_lists.append(lag)
 
 
 ##############
 ### Consolidar datos
-df_fin = pd.concat([Y,df1,df2,df3],axis=1)
+
+df_fin = pd.concat([Y]+lagged_lists,axis=1)
 df_fin = df_fin.sort_values(by=['day_hour'],ascending=False).reset_index(drop=True)
 df_fin.dropna(inplace=True)
 
 ## Extraer Año Mes Dia Hora de la fecha
-#df_fin['year']=df_fin['day_hour'].dt.year
+df_fin['year']=df_fin['day_hour'].dt.year
 df_fin['month']=df_fin['day_hour'].dt.month
 df_fin['day']=df_fin['day_hour'].dt.day 
 df_fin['hour']=df_fin['day_hour'].dt.hour
 
+## Recategorizar año
+years = np.linspace(2017,2030,num=13,dtype='int')
+years_dict = {}
+for i,year in enumerate(years):
+    years_dict[year]=i+1
+
+df_fin['year']=df_fin['year'].map(years_dict)
 
 
 ###################
@@ -67,6 +80,14 @@ df.day_hour.max()
 train = df_fin[df_fin['day_hour']<='2019-10-16']
 test = df_fin[df_fin['day_hour']>'2019-10-16']
 
+### Matriz X & y de entrenamiento
+X_train = train.drop(['day_hour','vsby'],axis=1)
+Y_train = train['vsby']
+
+##### Matriz X & Y de test
+Y_test = test['vsby']
+X_test = test.drop(['day_hour','vsby'],axis=1)
+
 
 #######################
 ### RANDOM FOREST #####
@@ -75,35 +96,36 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import auc, mean_squared_error, mean_absolute_error
 from sklearn.model_selection import GridSearchCV
 
-### Matriz X & y de entrenamiento
-X_train = train.drop(['day_hour','vsby'],axis=1)
-Y_train = train['vsby']
+# #### Parametrizacion del Modelo y Grilla de Validacion Cruzada
+# estim = RandomForestRegressor(n_estimators=100,criterion='mse',n_jobs=1,random_state=123)
+# forest = GridSearchCV(estimator=estim,cv=5,param_grid={'max_depth':np.arange(16)+1},verbose=2)
 
-#### Parametrizacion del Modelo y Grilla de Validacion Cruzada
-estim = RandomForestRegressor(n_estimators=100,criterion='mse',n_jobs=1,random_state=123)
-forest = GridSearchCV(estimator=estim,cv=5,param_grid={'max_depth':np.arange(X_train.shape[1])+1},verbose=2)
+# ##### Entrenar el modelo sobre la grilla de validacion
+# forest.fit(X=X_train,y=Y_train)
 
-##### Entrenar el modelo sobre la grilla de validacion
+# ##### Mejor Parámetro
+# forest.best_params_
+# ### {'max_depth': 8}
+# ###  nuevo: {'max_depth': 7}
+
+# #### Mejor Error Cuadratico Medio
+# forest.best_score_
+# ## 0.23321001075392683
+# ###  nuevo: 0.21969718284717787
+
+##### Re calibración del modelo con los mejores parámetros
+forest = RandomForestRegressor(n_estimators=100,criterion='mse',n_jobs=1,random_state=123,max_depth=7)
 forest.fit(X=X_train,y=Y_train)
 
-##### Matriz X & Y de test
-Y_test = test['vsby']
-X_test = test.drop(['day_hour','vsby'],axis=1)
-
-##### Mejor Parámetro
-forest.best_params_
-### {'max_depth': 8}
-
-
-#### Mejor Error Cuadratico Medio
-forest.best_score_
-## 0.23321001075392683
-
-#### Prediccion
+#### Prediccion 
 Y_pred = forest.predict(X_test)
 
-#### MSE de test
+#### MSE de train 0.32294936345991776
+train_mse = mean_squared_error(Y_train,forest.predict(X_train))
+
+#### MSE de test 0.3553254070124522
 test_mse = mean_squared_error(Y_test,Y_pred)
+
 
 #### Gráfico Predicción
 plt.subplots(figsize=(12,6))
@@ -113,98 +135,70 @@ plt.legend()
 plt.xlabel('Date')
 plt.ylabel('Horizontal Visibility')
 plt.xticks(rotation=30)
-plt.title("100 Trees 8 Max Depth Random Forest \n Training MSE: {:0.3f} Test MSE: {:0.3f}".format(forest.best_score_,test_mse))
+plt.title("Trees: 100 Max Depth: 7 Random Forest \n Training MSE: {:0.3f} Test MSE: {:0.3f}".format(train_mse,test_mse))
 plt.show()
 
 
 #### Importancias Relativas
-forest.feature_importances_
+importances = {"Regressor":X_train.columns,"Importance":forest.feature_importances_}
+importances = pd.DataFrame(importances)
+importances = importances.sort_values(by='Importance',ascending=False)
 
 
-#################
-### XGBOOST #####
-
-from xgboost import XGBRegressor
-from sklearn.metrics import auc, mean_squared_error, mean_absolute_error
-from sklearn.model_selection import RandomizedSearchCV
-from scipy.stats import randint
-
-
-### Matriz X & y de entrenamiento
-X_train = train.drop(['day_hour','vsby'],axis=1)
-Y_train = train['vsby']
-
-#### Parametrizacion del Modelo y Grilla de Validacion Cruzada
-estim = XGBRegressor(booster='gbtree',verbosity=0,random_state=123)
-np.random.seed(1234)
-param_dist = {"max_depth": np.linspace(4,10,num=6,dtype='int'),
-              "eta":np.random.uniform(0,1,size=20),
-              "subsample":np.random.uniform(0,1,size=20),
-              "max_features": randint(1, 11),
-              "min_samples_split": randint(2, 11),
-              "bootstrap": [True, False],
-              "criterion": ["gini", "entropy"]}
-
-xgb = RandomizedSearchCV(estimator=estim,cv=5,param_distributions=param_dist,verbose=2)
-
-##### Entrenar el modelo sobre la grilla de validacion
-xgb.fit(X=X_train,y=Y_train)
-
-##### Matriz X & Y de test
-Y_test = test['vsby']
-X_test = test.drop(['day_hour','vsby'],axis=1)
-
-##### Mejor Parámetro
-xgb.best_params_
-### {'bootstrap': False, 'criterion': 'gini', 'eta': 0.8759326347420947, 'max_depth': 4, 'max_features': 9, 'min_samples_split': 8, 'subsample': 0.8021476420801591}
-
-#### Mejor Error Cuadratico Medio
-xgb.best_score_
-## 0.2450765273697973
-
-#### Prediccion
-Y_pred = xgb.predict(X_test)
-
-#### MSE de test
-test_mse = mean_squared_error(Y_test,Y_pred)
-
-#### Gráfico Predicción
-plt.subplots(figsize=(12,6))
-plt.plot(test['day_hour'],Y_test,label="Real")
-plt.plot(test['day_hour'],Y_pred,label="Predicted")
-plt.legend()
-plt.xlabel('Date')
-plt.ylabel('Horizontal Visibility')
-plt.xticks(rotation=30)
-plt.title("XGBoost \n Training MSE: {:0.3f} Test MSE: {:0.3f}".format(xgb.best_score_,test_mse))
+#### Grafico de Importancias
+plt.subplots(figsize=(12,5))
+plt.bar(importances['Regressor'],height=importances['Importance'])
+plt.title('Relative Importance of the Regressors')
+plt.xticks(rotation=90,ha='right')
 plt.show()
 
 
-#### Importancias Relativas
-forest.feature_importances_
+# #################
+# ### Neural Network #####
+
+# ##### La red neuronal hace over fit, el error de entrenamiento es bueno, el de test muy alto.
+
+# from sklearn.neural_network import MLPRegressor
+# from sklearn.metrics import auc, mean_squared_error, mean_absolute_error
+# from sklearn.model_selection import RandomizedSearchCV
+
+# #### Parametrizacion del Modelo y Grilla de Validacion Cruzada
+# estim = MLPRegressor(hidden_layer_sizes=(40,20,10,5,1),random_state=1234,solver='adam',max_iter=1000,tol=1e-4,early_stopping=True)
+# grid = {'activation':['identity', 'logistic', 'tanh', 'relu'],
+#         'alpha':np.linspace(0.0001,0.9999,num=60)}
+# nn = RandomizedSearchCV(estimator=estim,cv=5,param_distributions=grid,verbose=2,random_state=1234)
+
+# ##### Entrenar el modelo sobre la grilla de validacion
+# nn.fit(X=X_train,y=Y_train)
+
+# ##### Mejor Parámetro
+# nn.best_params_
+# ### {'alpha': 0.10177457627118645, 'activation': 'tanh'}
+
+# #### Mejor Error Cuadratico Medio
+# nn.best_score_
+# ## 0.03878751702896733
+
+# #### Prediccion
+# Y_pred = nn.predict(X_test)
+
+# #### MSE de train
+# train_mse = mean_squared_error(Y_train,nn.predict(X_train))
+
+# #### MSE de test
+# test_mse = mean_squared_error(Y_test,Y_pred)
+
+
+# #### Gráfico Predicción
+# plt.subplots(figsize=(12,6))
+# plt.plot(test['day_hour'],Y_test,label="Real")
+# plt.plot(test['day_hour'],Y_pred,label="Predicted")
+# plt.legend()
+# plt.xlabel('Date')
+# plt.ylabel('Horizontal Visibility')
+# plt.xticks(rotation=30)
+# plt.title(" Neural Network \n Training MSE: {:0.3f} Test MSE: {:0.3f}".format(train_mse,test_mse))
+# plt.show()
 
 
 
-
-
-
-### Grafico
-a = df[df['day_hour']>='2019-11-13']
-cols = ['tmpf', 'dwpf', 'relh', 'drct', 'sknt', 'alti', 'vsby', 'skyl1', 'feel']
-plt.subplots(figsize=(12,12),ncols=3,sharex=True)
-for i,col in enumerate(cols):
-    plt.subplot(3,3,i+1)
-    plt.plot(a['day_hour'],a[col],label=col,color='navy')
-    plt.ylabel(col)
-    plt.xlabel('')
-    #plt.legend()
-    if i in [6,7,8]:
-        plt.xticks(rotation=30,ha='right')
-    else:
-        plt.xticks([''])
-    plt.title('{}'.format(col))
-
-plt.subplots_adjust(wspace=0.3,hspace=0.3)
-plt.show()
-
-df['day_hour'].max()
