@@ -96,22 +96,22 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import auc, mean_squared_error, mean_absolute_error
 from sklearn.model_selection import GridSearchCV
 
-# #### Parametrizacion del Modelo y Grilla de Validacion Cruzada
-# estim = RandomForestRegressor(n_estimators=100,criterion='mse',n_jobs=1,random_state=123)
-# forest = GridSearchCV(estimator=estim,cv=5,param_grid={'max_depth':np.arange(16)+1},verbose=2)
+#### Parametrizacion del Modelo y Grilla de Validacion Cruzada
+estim = RandomForestRegressor(n_estimators=100,criterion='mse',n_jobs=1,random_state=123)
+forest = GridSearchCV(estimator=estim,cv=5,param_grid={'max_depth':np.arange(16)+1},verbose=2)
 
-# ##### Entrenar el modelo sobre la grilla de validacion
-# forest.fit(X=X_train,y=Y_train)
+##### Entrenar el modelo sobre la grilla de validacion
+forest.fit(X=X_train,y=Y_train)
 
-# ##### Mejor Parámetro
-# forest.best_params_
-# ### {'max_depth': 8}
-# ###  nuevo: {'max_depth': 7}
+##### Mejor Parámetro
+forest.best_params_
+### {'max_depth': 8}
+###  nuevo: {'max_depth': 7}
 
-# #### Mejor Error Cuadratico Medio
-# forest.best_score_
-# ## 0.23321001075392683
-# ###  nuevo: 0.21969718284717787
+#### Mejor Error Cuadratico Medio
+forest.best_score_
+## 0.23321001075392683
+###  nuevo: 0.21969718284717787
 
 ##### Re calibración del modelo con los mejores parámetros
 forest = RandomForestRegressor(n_estimators=100,criterion='mse',n_jobs=1,random_state=123,max_depth=7)
@@ -136,6 +136,7 @@ plt.xlabel('Date')
 plt.ylabel('Horizontal Visibility')
 plt.xticks(rotation=30)
 plt.title("Trees: 100 Max Depth: 7 Random Forest \n Training MSE: {:0.3f} Test MSE: {:0.3f}".format(train_mse,test_mse))
+plt.savefig("data exploration/SKBO_train_vsby.png",bbox_inches='tight',dpi=300)
 plt.show()
 
 
@@ -150,7 +151,20 @@ plt.subplots(figsize=(12,5))
 plt.bar(importances['Regressor'],height=importances['Importance'])
 plt.title('Relative Importance of the Regressors')
 plt.xticks(rotation=90,ha='right')
+plt.savefig("data exploration/SKBO_importances_vsby.png",bbox_inches='tight',dpi=300)
 plt.show()
+
+#####Exportar Modelo
+import pickle
+# save the model to disk
+filename = 'dash/SKBO_vsby.sav'
+pickle.dump(forest, open(filename, 'wb'))
+
+
+
+
+
+
 
 
 # #################
