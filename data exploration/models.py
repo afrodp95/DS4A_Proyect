@@ -30,7 +30,7 @@ for station in stations:
     
     ## Get Data
     print("Fetching {} Clean Data".format(station))
-    query = "SELECT * FROM dataclean WHERE station = {}".format(station)
+    query = "SELECT * FROM dataclean WHERE station = '{}'".format(station)
     df = pd.read_sql(query, engine.connect(), parse_dates=('valid',))
     df = df.sort_values(by=['day_hour'],ascending=True).reset_index(drop=True)
     print('Clean Data of {} Succesfully Fetched From AWS RDS'.format(station),end="\n\n")
@@ -156,7 +156,7 @@ for station in stations:
     
     ## Get Data
     print("Fetching {} Clean Data".format(station))
-    query = "SELECT * FROM dataclean WHERE station = {}".format(station)
+    query = "SELECT * FROM dataclean WHERE station = '{}'".format(station)
     df = pd.read_sql(query, engine.connect(), parse_dates=('valid',))
     df = df.sort_values(by=['day_hour'],ascending=True).reset_index(drop=True)
     print('Clean Data of {} Succesfully Fetched From AWS RDS'.format(station),end="\n\n")

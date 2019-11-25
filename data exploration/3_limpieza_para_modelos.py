@@ -120,8 +120,8 @@ df = pd.concat(df_list,axis=0,ignore_index=True)
 #############################
 #### Exportar Solo Bogotá V1
 
-print('Selecting Bogotá V1')
-df = df[df['station']=='SKBO']
+#print('Selecting Bogotá V1')
+#df = df[df['station']=='SKBO']
 
 #############################
 #### Exportar Solo Ultimos 2 Meses de Info
@@ -133,8 +133,8 @@ df = df[df['station']=='SKBO']
 ########################################
 ##### Exportar A csv para consumirla #####
 
-print('Writing BOG Clean CSV for modeling')
+#print('Writing BOG Clean CSV for modeling')
 
-df.to_csv("bog_clean.csv.gz",encoding='UTF-8')
+df.to_csv("all_clean.csv.gz",encoding='UTF-8')
 
 print('End... Starting App')
