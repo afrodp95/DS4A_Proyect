@@ -33,6 +33,7 @@ for station in stations:
     query = "SELECT * FROM dataclean WHERE station = '{}'".format(station)
     df = pd.read_sql(query, engine.connect(), parse_dates=('valid',))
     df = df.sort_values(by=['day_hour'],ascending=True).reset_index(drop=True)
+    df = df.drop_duplicates(subset='day_hour')
     print('Clean Data of {} Succesfully Fetched From AWS RDS'.format(station),end="\n\n")
 
     ## Save vsby and date_hour
@@ -62,7 +63,7 @@ for station in stations:
     df_fin['hour']=df_fin['day_hour'].dt.hour
 
     ## Recategorizar año
-    years = np.linspace(2017,2030,num=13,dtype='int')
+    years = np.linspace(2016,2030,num=13,dtype='int')
     years_dict = {}
     for i,year in enumerate(years):
         years_dict[year]=i+1
@@ -92,7 +93,7 @@ for station in stations:
     forest.fit(X=X_train,y=Y_train)
 
     ##### Re calibración del modelo con los mejores parámetros
-    m_depth = forest.best_params['max_depth']
+    m_depth = forest.best_params_['max_depth']
     forest2 = RandomForestRegressor(n_estimators=100,criterion='mse',
                                     n_jobs=1,random_state=123,
                                     max_depth=m_depth)
@@ -159,6 +160,7 @@ for station in stations:
     query = "SELECT * FROM dataclean WHERE station = '{}'".format(station)
     df = pd.read_sql(query, engine.connect(), parse_dates=('valid',))
     df = df.sort_values(by=['day_hour'],ascending=True).reset_index(drop=True)
+    df = df.drop_duplicates(subset='day_hour')
     print('Clean Data of {} Succesfully Fetched From AWS RDS'.format(station),end="\n\n")
 
     ## Save vsby and date_hour
@@ -188,7 +190,7 @@ for station in stations:
     df_fin['hour']=df_fin['day_hour'].dt.hour
 
     ## Recategorizar año
-    years = np.linspace(2017,2030,num=13,dtype='int')
+    years = np.linspace(2016,2030,num=13,dtype='int')
     years_dict = {}
     for i,year in enumerate(years):
         years_dict[year]=i+1
@@ -218,7 +220,7 @@ for station in stations:
     forest.fit(X=X_train,y=Y_train)
 
     ##### Re calibración del modelo con los mejores parámetros
-    m_depth = forest.best_params['max_depth']
+    m_depth = forest.best_params_['max_depth']
     forest2 = RandomForestRegressor(n_estimators=100,criterion='mse',
                                     n_jobs=1,random_state=123,
                                     max_depth=m_depth)
