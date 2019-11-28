@@ -119,7 +119,7 @@ for station in stations:
     plt.xticks(rotation=30)
     plt.title("Trees: 100 Max Depth: {} Random Forest \n Training MSE: {:0.3f} Test MSE: {:0.3f}".format(m_depth,train_mse,test_mse))
     plt.savefig("data exploration/{}_train_vsby.png".format(station),bbox_inches='tight',dpi=300)
-
+    plt.clf()
 
     #### Importancias Relativas
     importances = {"Regressor":X_train.columns,"Importance":forest2.feature_importances_}
@@ -133,6 +133,7 @@ for station in stations:
     plt.title('Horizontal Visibility of {} Model \n Relative Importance of the Regressors'.format(station))
     plt.xticks(rotation=90,ha='right')
     plt.savefig("data exploration/{}_importances_vsby.png".format(station),bbox_inches='tight',dpi=300)
+    plt.clf()
 
     #####Exportar Modelo
     filename = 'dash/{}_vsby.sav'.format(station)
@@ -246,7 +247,7 @@ for station in stations:
     plt.xticks(rotation=30)
     plt.title("Trees: 100 Max Depth: {} Random Forest \n Training MSE: {:0.3f} Test MSE: {:0.3f}".format(m_depth,train_mse,test_mse))
     plt.savefig("data exploration/{}_train_skyl1.png".format(station),bbox_inches='tight',dpi=300)
-
+    plt.clf()
 
     #### Importancias Relativas
     importances = {"Regressor":X_train.columns,"Importance":forest2.feature_importances_}
@@ -260,9 +261,10 @@ for station in stations:
     plt.title('Vertical Visibility of {} Model \n Relative Importance of the Regressors'.format(station))
     plt.xticks(rotation=90,ha='right')
     plt.savefig("data exploration/{}_importances_skyl1.png".format(station),bbox_inches='tight',dpi=300)
+    plt.clf()
 
     #####Exportar Modelo
-    filename = 'dash/{}_vsby.sav'.format(station)
+    filename = 'dash/{}_skyl1.sav'.format(station)
     pickle.dump(forest, open(filename, 'wb'))
 
     del(forest,forest2)
