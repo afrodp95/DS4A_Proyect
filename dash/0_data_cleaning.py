@@ -115,4 +115,10 @@ for airport in airports:
 
 df = pd.concat(df_list,axis=0,ignore_index=True)
 df.to_sql(name='dataclean', con=engine, if_exists = 'append', index=False, chunksize=10000)
+engine.execute('select delete_clean_duplicates()')
+engine.execute('delete dataclean where day_hour is null)')
+
+
+
+
 #modificacion
