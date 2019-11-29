@@ -19,7 +19,7 @@ from sklearn.model_selection import GridSearchCV
 #####################
 ### Fecth Clean data from AWS DB
 
-stations = ['SKAR', 'SKBG', 'SKBO', 'SKCC', 'SKCG', 'SKCL', 'SKMR', 'SKPE', 'SKSM', 'SKSP']
+stations = ['SKAR','SKQL','SKBO','SKBG','SKCL','SKCC','SKCG','SKPE','SKSP','SKSM','SKMR']
 engine = create_engine('postgresql://ds4a_18:ds4a2019@ds4a18.cmlpaj0d1yqv.us-east-2.rds.amazonaws.com:5432/Airports_ds4a')
 
 #############################################
