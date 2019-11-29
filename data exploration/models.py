@@ -1,5 +1,9 @@
 #####################
 # Importar librerías
+
+########
+### Importante Version de sklearn = 0.21.3
+
 import pandas as pd 
 import numpy as np
 import datetime
@@ -47,8 +51,8 @@ for station in stations:
     ## Lag Data
     lagged_lists = []
 
-    for i in [1,2,4,6,8,10,12]:
-        lag = df_num.shift(periods=1)
+    for i in [1,2,3,4,5,6,7,8,9,10,11,12]:
+        lag = df_num.shift(periods=i)
         lag.columns = [col+'_{}'.format(i) for col in lag.columns] 
         lagged_lists.append(lag)
 
@@ -162,6 +166,7 @@ for station in stations:
     df = pd.read_sql(query, engine.connect(), parse_dates=('valid',))
     df = df.sort_values(by=['day_hour'],ascending=True).reset_index(drop=True)
     df = df.drop_duplicates(subset='day_hour')
+    df['skyl1']=np.log(df['skyl1'])
     print('Clean Data of {} Succesfully Fetched From AWS RDS'.format(station),end="\n\n")
 
     ## Save vsby and date_hour
@@ -175,8 +180,8 @@ for station in stations:
     ## Lag Data
     lagged_lists = []
 
-    for i in [1,2,4,6,8,10,12]:
-        lag = df_num.shift(periods=1)
+    for i in [1,2,3,4,5,6,7,8,9,10,11,12]:
+        lag = df_num.shift(periods=i)
         lag.columns = [col+'_{}'.format(i) for col in lag.columns] 
         lagged_lists.append(lag)
 
@@ -239,8 +244,8 @@ for station in stations:
 
     #### Gráfico Predicción
     plt.subplots(figsize=(12,6))
-    plt.plot(test['day_hour'],Y_test,label="Real")
-    plt.plot(test['day_hour'],Y_pred,label="Predicted")
+    plt.plot(test['day_hour'],np.exp(Y_test),label="Real")
+    plt.plot(test['day_hour'],np.exp(Y_pred),label="Predicted")
     plt.legend()
     plt.xlabel('Date')
     plt.ylabel('Vertical Visibility (skyl1)')
