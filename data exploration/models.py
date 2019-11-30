@@ -19,12 +19,22 @@ from sklearn.model_selection import GridSearchCV
 #####################
 ### Fecth Clean data from AWS DB
 
-stations = ['SKAR','SKQL','SKBO','SKBG','SKCL','SKCC','SKCG','SKPE','SKSP','SKSM','SKMR']
+#,'SKQL' Ommited Because isnt in raw data
+stations = ['SKAR','SKBO','SKBG','SKCL','SKCC','SKCG','SKPE','SKSP','SKSM','SKMR']
 engine = create_engine('postgresql://ds4a_18:ds4a2019@ds4a18.cmlpaj0d1yqv.us-east-2.rds.amazonaws.com:5432/Airports_ds4a')
 
 #############################################
 ####  HORIZONTAL VISBILITY MODELS (vsby) ####
 #############################################
+
+
+#####
+## Save Training Test Data
+
+train_mses = []
+test_mses = []
+max_depths = []
+
 
 print("Model Training for Horizontal Visibiliy Initiated",end="\n\n")
 
@@ -35,7 +45,7 @@ for station in stations:
     ## Get Data
     print("Fetching {} Clean Data".format(station))
     query = "SELECT * FROM dataclean WHERE station = '{}'".format(station)
-    df = pd.read_sql(query, engine.connect(), parse_dates=('valid',))
+    df = pd.read_sql(query, engine.connect(), parse_dates=('day_hour',))
     df = df.sort_values(by=['day_hour'],ascending=True).reset_index(drop=True)
     df = df.drop_duplicates(subset='day_hour')
     print('Clean Data of {} Succesfully Fetched From AWS RDS'.format(station),end="\n\n")
@@ -51,7 +61,7 @@ for station in stations:
     ## Lag Data
     lagged_lists = []
 
-    for i in [1,2,3,4,5,6,7,8,9,10,11,12]:
+    for i in [6,7,8,9,10,11,12]:
         lag = df_num.shift(periods=i)
         lag.columns = [col+'_{}'.format(i) for col in lag.columns] 
         lagged_lists.append(lag)
@@ -112,6 +122,10 @@ for station in stations:
     #### MSE de test 0.3553254070124522
     test_mse = mean_squared_error(Y_test,Y_pred)
 
+    # Guardar datos
+    train_mses.append(train_mse)
+    test_mses.append(test_mse)
+    max_depths.append(m_depth)
 
     #### Gráfico Predicción
     plt.subplots(figsize=(12,6))
@@ -149,10 +163,20 @@ for station in stations:
     print("----------------------------------------------------------",end="\n\n\n")
 
 
+vsvy_training_info = pd.DataFrame({'station':stations,'train_mse':train_mses,'test_mse':test_mses,'max_depth':max_depths,'ntrees':100})
+vsvy_training_info.to_csv("data exploration/vsvy_training_info.csv",sep=';')
 
 #############################################
 ####  VERTICAL VISBILITY MODELS (skyl1) ####
 #############################################
+
+#####
+## Save Training Test Data
+
+train_mses = []
+test_mses = []
+max_depths = []
+
 
 print("Model Training for Vertical Visibiliy Initiated",end="\n\n")
 
@@ -163,7 +187,7 @@ for station in stations:
     ## Get Data
     print("Fetching {} Clean Data".format(station))
     query = "SELECT * FROM dataclean WHERE station = '{}'".format(station)
-    df = pd.read_sql(query, engine.connect(), parse_dates=('valid',))
+    df = pd.read_sql(query, engine.connect(), parse_dates=('day_hour',))
     df = df.sort_values(by=['day_hour'],ascending=True).reset_index(drop=True)
     df = df.drop_duplicates(subset='day_hour')
     df['skyl1']=np.log(df['skyl1'])
@@ -180,7 +204,7 @@ for station in stations:
     ## Lag Data
     lagged_lists = []
 
-    for i in [1,2,3,4,5,6,7,8,9,10,11,12]:
+    for i in [6,7,8,9,10,11,12]:
         lag = df_num.shift(periods=i)
         lag.columns = [col+'_{}'.format(i) for col in lag.columns] 
         lagged_lists.append(lag)
@@ -241,6 +265,10 @@ for station in stations:
     #### MSE de test 0.3553254070124522
     test_mse = mean_squared_error(Y_test,Y_pred)
 
+    # Guardar datos
+    train_mses.append(train_mse)
+    test_mses.append(test_mse)
+    max_depths.append(m_depth)
 
     #### Gráfico Predicción
     plt.subplots(figsize=(12,6))
@@ -278,18 +306,8 @@ for station in stations:
     print("----------------------------------------------------------",end="\n\n\n")
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+skyl1_training_info = pd.DataFrame({'station':stations,'train_mse':train_mses,'test_mse':test_mses,'max_depth':max_depths,'ntrees':100})
+skyl1_training_info.to_csv("data exploration/skyl1_training_info.csv",sep=';')
 
 
 

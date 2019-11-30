@@ -3,7 +3,7 @@
 import pandas as pd 
 import numpy as np
 import plotly.graph_objects as go
-from datime import datetime, timedelta
+from datetime import datetime, timedelta
 import time
 from sqlalchemy import create_engine
 
@@ -16,8 +16,6 @@ df = pd.read_sql("SELECT * from dataraw", engine.connect(), parse_dates=('valid'
 df = df.dropna(subset=['valid'],axis=0)
 df['DateTime'] = df['valid'].apply(lambda x: datetime.strptime(str(x), "%Y-%m-%d %H:%M:%S")- timedelta(hours=3))
 df.replace(['M',None],np.nan,inplace=True)
-
-
 
 print('Data Succesfully Fetched From AWS RDS')
 
