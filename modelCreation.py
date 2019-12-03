@@ -30,7 +30,6 @@ intEndYear = 2030
 dfAirports =  pd.read_csv('airports.csv')
 dfCovars = pd.DataFrame({'ID':['vsby','skyl1'],'Description':['Horizontal visibility','Vertical visibility']})
 
-#lstAirports = ['SKBG']
 lstAirports = dfAirports['ICAO'].values.tolist()
 
 lstCovars = dfCovars['ID'].values.tolist()
@@ -63,7 +62,7 @@ def getLatitude(strStation):
     return float(getStationData('latitude',strStation))
 
 
-### Fetch Clean data from AWS DB
+### Fetch Clean data from AWS DB for a given station
 def fetchStationData(strStation, connection):
 
     print("Training models for {} station".format(getAirport(strStation)),end="\n\n")
@@ -84,7 +83,7 @@ def fetchStationData(strStation, connection):
 def createModel(strStation, dfTrain, dfTest, strCovar):
     #### Model and cross validation grid parameters
     estim = RandomForestRegressor(n_estimators=intBestEstimators,criterion='mse',n_jobs=1,random_state=intRandomState)
-    forest = GridSearchCV(estimator=estim,cv=intCV,param_grid={'max_depth':np.arange(11)+1},verbose=2)
+    forest = GridSearchCV(estimator=estim,cv=intCV,param_grid={'max_depth':np.arange(11)+1},verbose=1)
 
     print('Training for ' + getCovarDescription(strCovar))
 
@@ -154,6 +153,7 @@ def createModel(strStation, dfTrain, dfTest, strCovar):
 def main(lstStations=lstAirports, lstFields=lstCovars):
     engine = create_engine(strConnection)
 
+
     ## Recategorize the year
     years = np.linspace(intStartYear,intEndYear,num=13,dtype='int')
     years_dict = {}
@@ -163,10 +163,26 @@ def main(lstStations=lstAirports, lstFields=lstCovars):
     for station in lstStations:
         dfResult = fetchStationData(station,engine)
 
-        ## Select only numeric variables
-        dfNumeric = dfResult[lstNumCols]
+        #Lag setup start
+        
+        ############### MODIFIED PROCESS ################
+        # Create additional dates for prediction
+        dtStart = pd.to_datetime(dfResult['day_hour'].max(), infer_datetime_format=True)
+        dtEnd = dtStart + datetime.timedelta(hours=25)
+        print(dtStart)
+        print(dtEnd)
+        
+        dfDates = pd.DataFrame(pd.date_range(start=dtStart, end=dtEnd, freq = 'H'), columns = ['day_hour'])
+        dfDates['station'] = station
+        
+        dfStation = pd.merge(dfResult,dfDates, left_on =['day_hour','station'], right_on=['day_hour','station'], how = 'outer')
 
-        print("Training {} station models".format(getCity(strStation)),end="\n\n")
+        #Lag setup end
+
+        ## Select only numeric variables
+        dfNumeric = dfStation[lstNumCols]
+
+        print("Training {} station models".format(getCity(station)),end="\n\n")
 
         ## Lag Data
         lstLagged = []
@@ -176,23 +192,33 @@ def main(lstStations=lstAirports, lstFields=lstCovars):
             lstLagged.append(lag)
         
         #for var in lstVars:
-        Y = dfResult[['day_hour','vsby','skyl1']]
-        dfFin = pd.concat([Y]+lstLagged,axis=1)
-        dfFin = dfFin.sort_values(by=['day_hour'],ascending=False).reset_index(drop=True)
-        dfFin.dropna(inplace=True)
+        Y = dfStation[['day_hour','vsby','skyl1']]
+        dfFinal = pd.concat([Y]+lstLagged,axis=1)
+
+        #Lagging start
+        v=25-6;v
+        dfFinal=dfFinal.iloc[25:,:]
+        dfFinal=dfFinal.iloc[:-v,:]
+        
+        dfPrediction = dfFinal[dfFinal.isnull().any(axis=1)] # Guardar las X para las predicciones
+        dfFinal = dfFinal[~dfFinal.isnull().any(axis=1)] # Separar el resto para el train y test
+        #Lagging end
+
+        dfFinal = dfFinal.sort_values(by=['day_hour'],ascending=False).reset_index(drop=True)
+        #dfFinal.dropna(inplace=True)
 
         ## Extract year,month,day and hour from the date
-        dfFin['year']=pd.DatetimeIndex(dfFin['day_hour']).year
-        dfFin['month']=pd.DatetimeIndex(dfFin['day_hour']).month
-        dfFin['day']=pd.DatetimeIndex(dfFin['day_hour']).day 
-        dfFin['hour']=pd.DatetimeIndex(dfFin['day_hour']).hour
+        dfFinal['year']=pd.DatetimeIndex(dfFinal['day_hour']).year
+        dfFinal['month']=pd.DatetimeIndex(dfFinal['day_hour']).month
+        dfFinal['day']=pd.DatetimeIndex(dfFinal['day_hour']).day 
+        dfFinal['hour']=pd.DatetimeIndex(dfFinal['day_hour']).hour
 
-        dfFin['year']=dfFin['year'].map(years_dict)
+        dfFinal['year']=dfFinal['year'].map(years_dict)
         print("Data for model training ready",end="\n\n")
 
         print("Selecting train and test data",end="\n\n")
-        train = dfFin[dfFin['day_hour']<='2019-10-23']
-        test = dfFin[dfFin['day_hour']>'2019-10-23']
+        train = dfFinal[dfFinal['day_hour']<='2019-10-23']
+        test = dfFinal[dfFinal['day_hour']>'2019-10-23']
 
         for var in lstFields:
             createModel(station, train, test, var)
