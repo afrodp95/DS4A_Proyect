@@ -20,7 +20,7 @@ from sklearn.model_selection import GridSearchCV
 ### Fecth Clean data from AWS DB
 
 #,'SKQL' Ommited Because isnt in raw data
-stations = ['SKAR','SKBO','SKBG','SKCL','SKCC','SKCG','SKPE','SKSP','SKSM','SKMR']
+stations = ['SKBO','SKBG','SKCL','SKCC','SKCG','SKPE','SKSP','SKSM','SKMR']
 engine = create_engine('postgresql://ds4a_18:ds4a2019@ds4a18.cmlpaj0d1yqv.us-east-2.rds.amazonaws.com:5432/Airports_ds4a')
 
 #############################################
@@ -61,7 +61,7 @@ for station in stations:
     ## Lag Data
     lagged_lists = []
 
-    for i in [6,7,8,9,10,11,12]:
+    for i in [6,7,8,9,10,11,12,24,25]:
         lag = df_num.shift(periods=i)
         lag.columns = [col+'_{}'.format(i) for col in lag.columns] 
         lagged_lists.append(lag)
@@ -190,7 +190,7 @@ for station in stations:
     df = pd.read_sql(query, engine.connect(), parse_dates=('day_hour',))
     df = df.sort_values(by=['day_hour'],ascending=True).reset_index(drop=True)
     df = df.drop_duplicates(subset='day_hour')
-    df['skyl1']=np.log(df['skyl1'])
+    df['skyl1']=np.log(df['skyl1']+1)
     print('Clean Data of {} Succesfully Fetched From AWS RDS'.format(station),end="\n\n")
 
     ## Save vsby and date_hour
@@ -204,7 +204,7 @@ for station in stations:
     ## Lag Data
     lagged_lists = []
 
-    for i in [6,7,8,9,10,11,12]:
+    for i in [6,7,8,9,10,11,12,24,25]:
         lag = df_num.shift(periods=i)
         lag.columns = [col+'_{}'.format(i) for col in lag.columns] 
         lagged_lists.append(lag)
