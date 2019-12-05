@@ -144,22 +144,6 @@ app.layout = html.Div(children=[
                     ]
                 ),
                 html.Div(
-                    id = 'table-div',
-                    className='twelve columns card',
-                    children=[
-                        dash_table.DataTable(
-                            id='table',
-                            columns=vars_list_dt,
-                            data=df.to_dict('records'),
-                            style_cell={'width': '50px'},
-                            style_table={
-                                    'maxHeight': '450px',
-                                    'overflowY': 'scroll'
-                                }
-                        )
-                    ]
-                ),
-                html.Div(
                     id = 'plots-div',
                     className='twelve columns card',
                     children=[
@@ -179,6 +163,22 @@ app.layout = html.Div(children=[
                                     ]
                                 )
                             ] 
+                        )
+                    ]
+                ),
+                html.Div(
+                    id = 'table-div',
+                    className='twelve columns card',
+                    children=[
+                        dash_table.DataTable(
+                            id='table',
+                            columns=vars_list_dt,
+                            data=df.to_dict('records'),
+                            style_cell={'width': '50px'},
+                            style_table={
+                                    'maxHeight': '450px',
+                                    'overflowY': 'scroll'
+                                }
                         )
                     ]
                 )
