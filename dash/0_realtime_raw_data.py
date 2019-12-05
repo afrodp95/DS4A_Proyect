@@ -64,6 +64,7 @@ for station in stations:
     data = data.drop(data.index[0])
     df = df.append(data)
 df.dropna(subset = ['valid'])
+df.dropna(how='all')
 #eliminacion de campos no usados
 del df['metar']
 del df['wxcodes']
