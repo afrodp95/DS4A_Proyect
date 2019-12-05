@@ -20,6 +20,7 @@ from sklearn.model_selection import GridSearchCV
 ### Fecth Clean data from AWS DB
 
 #,'SKQL' Ommited Because isnt in raw data
+# 'SKAR' Ommited due to info inconsistency
 stations = ['SKBO','SKBG','SKCL','SKCC','SKCG','SKPE','SKSP','SKSM','SKMR']
 engine = create_engine('postgresql://ds4a_18:ds4a2019@ds4a18.cmlpaj0d1yqv.us-east-2.rds.amazonaws.com:5432/Airports_ds4a')
 
@@ -155,7 +156,7 @@ for station in stations:
 
     #####Exportar Modelo
     filename = 'dash/{}_vsby.sav'.format(station)
-    pickle.dump(forest, open(filename, 'wb'))
+    pickle.dump(forest2, open(filename, 'wb'))
 
     del(forest,forest2)
 
@@ -298,7 +299,7 @@ for station in stations:
 
     #####Exportar Modelo
     filename = 'dash/{}_skyl1.sav'.format(station)
-    pickle.dump(forest, open(filename, 'wb'))
+    pickle.dump(forest2, open(filename, 'wb'))
 
     del(forest,forest2)
 
