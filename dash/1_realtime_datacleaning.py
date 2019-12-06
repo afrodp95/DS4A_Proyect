@@ -2,7 +2,7 @@
 # Importar librerías
 import pandas as pd 
 import numpy as np
-import plotly.graph_objects as go
+#import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import time
 from sqlalchemy import create_engine
@@ -17,11 +17,13 @@ df = df.dropna(subset=['valid'],axis=0)
 df['DateTime'] = df['valid'].apply(lambda x: datetime.strptime(str(x), "%Y-%m-%d %H:%M:%S")- timedelta(hours=3))
 df.replace(['M',None],np.nan,inplace=True)
 
-print('Data Succesfully Fetched From AWS RDS')
+print('Data Succesfully Fetched From AWS RDS',end='\n\n')
 
 
 #####################
 #### Select Columns With Na % lower than 22% (previously selected)
+
+print('Deleting Variables With More Than 22% of Missing Values',end='\n\n')
 
 cols = ['id','station','DateTime', 'valid', 'tmpf', 'dwpf', 'relh', 'drct',
        'sknt', 'p01i', 'alti', 'vsby', 'skyc1', 'skyl1', 'feel']
@@ -30,18 +32,50 @@ df = df[cols]
 ###################
 #### Convert to Numeric (in sql are all text)
 
-numeric_cols = ['lon','lat','tmpf', 'dwpf', 'relh', \
-'drct', 'sknt', 'alti', 'vsby', 'skyl1', 'feel']
+print('Checking the Correct Variables Dtype',end='\n\n')
+
 numeric_cols = ['tmpf', 'dwpf', 'relh', 'drct', 'sknt', 'alti', 'vsby', 'skyl1', 'feel']
 
 for col in numeric_cols:
     df[col] = df[col].astype(float)
 
+###################
+#### Replacing Outliers
+
+print('Replacing Outliers',end='\n\n')
+
+def quantile_replace(x):
+    ## Find Quantiles
+    q15 = np.quantile(x,0.15)
+    q85 = np.quantile(x,0.85)
+    ## Find Index of elements outside boundaries
+    mask = (x<q15) & (x>q85)
+    ind = x[mask].index
+    ## Transform index to get the previous element (if 0 get next)
+    ind_replace = [i-1 if i>0 else i+1 for i in ind]
+    ## Get previous element
+    x.iloc[ind] = x.iloc[ind_replace].values
+    return x
+
+df_list = []    
+
+for station in df['station'].unique():
+    print('Replacing {} Outliers'.format(station))
+    a = df[df['station']==station]
+    for col in numeric_cols:
+        try:
+            a[col]=a[col].apply(quantile_replace)
+        except:
+            pass
+    df_list.append(a)
+
+df = pd.concat(df_list,axis=0)
+
 
 #################
 ### Find  Missing Date-Hour Intervals
 
-print('Finding Missing Data Intervals')
+print('Finding Missing Data Intervals',end='\n\n')
 
 df['day_hour'] = df['DateTime'].apply(lambda x: datetime.strftime(x, "%Y-%m-%d %H"))
 
@@ -69,7 +103,6 @@ for j,i in enumerate(lista):
 
 print(len(df2))
 
-
 # Pegarle la informacin
 df2 = pd.merge(df2,df, left_on =['station','day_hour'], right_on=['station','day_hour'], how = 'left')
 df = df2.copy()
@@ -81,7 +114,7 @@ del(df2)
 ######## En Toda la Base ###############
 ########################################
 
-print('Dealing With Missing Data')
+print('Dealing With Missing Data',end='\n\n')
 
 
 from sklearn.experimental import enable_iterative_imputer
@@ -112,11 +145,12 @@ for airport in airports:
     df_list.append(df2_full)
 
 df = pd.concat(df_list,axis=0,ignore_index=True)
+
+print('Writing to AWS RDB',end='\n\n')
+
 df.to_sql(name='dataclean', con=engine, if_exists = 'append', index=False, chunksize=10000)
 engine.execute('select delete_clean_duplicates()')
-engine.execute('delete dataclean where day_hour is null)')
+#engine.execute('delete dataclean where day_hour is null)')
 
-
-
-
+print('Finish...',end='\n\n')
 #modificacion

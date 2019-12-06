@@ -17,8 +17,8 @@ from sklearn.ensemble import RandomForestRegressor
 
 ##############
 ### Import Clean Data
-
-stations = ['SKBO','SKBG','SKCL','SKCC','SKCG','SKPE','SKSP','SKSM','SKMR']
+## SKMR DELETED...
+stations = ['SKBO','SKBG','SKCL','SKCC','SKCG','SKPE','SKSP','SKSM','SKRG']
 engine = create_engine('postgresql://ds4a_18:ds4a2019@ds4a18.cmlpaj0d1yqv.us-east-2.rds.amazonaws.com:5432/Airports_ds4a')
 query = "SELECT * FROM dataclean"
 df = pd.read_sql(query, engine.connect(), parse_dates=('day_hour',))
@@ -38,10 +38,11 @@ air_names = {#'SKAR':'Aeropuerto Internacional el Edén (Armenia - Quindío)',
              'SKCC':'Aeropuerto Internacional Camilo Daza (Cúcuta - Norte de Santander)', 
              'SKCG':'Aeropuerto Internacional Rafael Núñez (Cartagena - Bolívar)', 
              'SKCL':'Aeropuerto Internacional Alfonso Bonilla Aragón (Cali - Valle)', 
-             'SKMR':'Aeropuerto Internacional Los Garzones (Montería - Córdoba)', 
+             #'SKMR':'Aeropuerto Internacional Los Garzones (Montería - Córdoba)', 
              'SKPE':'Aeropuerto Internacional Matecaña (Pereira - Risaralda)',
              'SKSM': 'Aeropuerto Internacional Simón Bolivar (Santa Marta - Magdalena)',
-             'SKSP':'Aeropuerto Internacional Gustavo Rojas Pinilla (San Andrés - Colombia)'}
+             'SKSP':'Aeropuerto Internacional Gustavo Rojas Pinilla (San Andrés - Colombia)',
+             'SKRG':'Aeropuerto Internacional José María Córdova (Rionegro - Antioquia)'}
 
 df['station_name'] = df['station'].map(air_names)
 
@@ -320,7 +321,7 @@ def create_plot_data(df,station,variable):
     df_air = df[df['station']==station].sort_values(by=['day_hour'],ascending=True).reset_index(drop=True).drop_duplicates(subset='day_hour')
     ## Seleccionar Ultimas 48 horas de info
     end_date = df_air['day_hour'].max()
-    start_date = end_date-datetime.timedelta(hours=30)
+    start_date = end_date-datetime.timedelta(hours=20)
     date_range = pd.date_range(start=str(start_date),end=str(end_date),freq='H').to_list()
     df_air = df_air.loc[df_air['day_hour'].isin(date_range),['day_hour',variable]]
     df_air['type']='Current'
