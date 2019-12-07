@@ -21,8 +21,27 @@ from sklearn.model_selection import GridSearchCV
 
 #,'SKQL' Ommited Because isnt in raw data
 # 'SKAR' Ommited due to info inconsistency
-stations = ['SKBO','SKBG','SKCL','SKCC','SKCG','SKPE','SKSP','SKSM','SKMR']
+# 'SKMR' Ommited
+
+stations = ['SKBO','SKBG','SKCL','SKCC','SKCG','SKPE','SKSP','SKSM','SKRG','SKBQ']
+# stations = ['SKRG']
 engine = create_engine('postgresql://ds4a_18:ds4a2019@ds4a18.cmlpaj0d1yqv.us-east-2.rds.amazonaws.com:5432/Airports_ds4a')
+
+####################
+#### Map Airport Names
+
+air_names = {#'SKAR':'Aeropuerto Internacional el Edén (Armenia - Quindío)',
+             'SKBG':'Aeropuerto Internacional Palonegro (Bucaramanga - Santander)',
+             'SKBO':'Aeropuerto Internacional El Dorado (Bogotá - Bogotá D.C.)', 
+             'SKCC':'Aeropuerto Internacional Camilo Daza (Cúcuta - Norte de Santander)', 
+             'SKCG':'Aeropuerto Internacional Rafael Núñez (Cartagena - Bolívar)', 
+             'SKCL':'Aeropuerto Internacional Alfonso Bonilla Aragón (Cali - Valle)', 
+             #'SKMR':'Aeropuerto Internacional Los Garzones (Montería - Córdoba)', 
+             'SKPE':'Aeropuerto Internacional Matecaña (Pereira - Risaralda)',
+             'SKSM': 'Aeropuerto Internacional Simón Bolivar (Santa Marta - Magdalena)',
+             'SKSP':'Aeropuerto Internacional Gustavo Rojas Pinilla (San Andrés - Colombia)',
+             'SKRG':'Aeropuerto Internacional José María Córdova (Medellín - Antioquia)',
+             'SKBQ':'Aeropuerto Internacional Ernesto Cortissoz (Barranquilla - Atlantico)'}
 
 #############################################
 ####  HORIZONTAL VISBILITY MODELS (vsby) ####
@@ -49,6 +68,7 @@ for station in stations:
     df = pd.read_sql(query, engine.connect(), parse_dates=('day_hour',))
     df = df.sort_values(by=['day_hour'],ascending=True).reset_index(drop=True)
     df = df.drop_duplicates(subset='day_hour')
+    df['station_name']=df['station'].map(air_names)
     print('Clean Data of {} Succesfully Fetched From AWS RDS'.format(station),end="\n\n")
 
     ## Save vsby and date_hour
@@ -87,8 +107,8 @@ for station in stations:
     print("Data For Model Training Ready",end="\n\n")
 
     print("Selecting Train and Test Data",end="\n\n")
-    train = df_fin[df_fin['day_hour']<='2019-10-23']
-    test = df_fin[df_fin['day_hour']>'2019-10-23']
+    train = df_fin[df_fin['day_hour']<='2019-11-06']
+    test = df_fin[df_fin['day_hour']>'2019-11-06']
 
     ### Matriz X & y de entrenamiento
     X_train = train.drop(['day_hour','vsby'],axis=1)
@@ -128,6 +148,9 @@ for station in stations:
     test_mses.append(test_mse)
     max_depths.append(m_depth)
 
+    ## Nombre de estacion
+    station_name = df['station_name'].values[0]
+
     #### Gráfico Predicción
     plt.subplots(figsize=(12,6))
     plt.plot(test['day_hour'],Y_test,label="Real")
@@ -136,7 +159,7 @@ for station in stations:
     plt.xlabel('Date')
     plt.ylabel('Horizontal Visibility')
     plt.xticks(rotation=30)
-    plt.title("Trees: 100 Max Depth: {} Random Forest \n Training MSE: {:0.3f} Test MSE: {:0.3f}".format(m_depth,train_mse,test_mse))
+    plt.title("{} \n Trees: 100 Max Depth: {} Random Forest \n Training MSE: {:0.3f} Test MSE: {:0.3f}".format(station_name,m_depth,train_mse,test_mse))
     plt.savefig("data exploration/{}_train_vsby.png".format(station),bbox_inches='tight',dpi=300)
     plt.clf()
 
@@ -149,7 +172,7 @@ for station in stations:
     #### Grafico de Importancias
     plt.subplots(figsize=(12,5))
     plt.bar(importances['Regressor'],height=importances['Importance'])
-    plt.title('Horizontal Visibility of {} Model \n Relative Importance of the Regressors'.format(station))
+    plt.title('Horizontal Visibility of {} \n Relative Importance of the Regressors'.format(station_name))
     plt.xticks(rotation=90,ha='right')
     plt.savefig("data exploration/{}_importances_vsby.png".format(station),bbox_inches='tight',dpi=300)
     plt.clf()
@@ -271,6 +294,9 @@ for station in stations:
     test_mses.append(test_mse)
     max_depths.append(m_depth)
 
+    ## Nombre de estacion
+    station_name = df['station_name'].values[0]
+
     #### Gráfico Predicción
     plt.subplots(figsize=(12,6))
     plt.plot(test['day_hour'],np.exp(Y_test),label="Real")
@@ -279,7 +305,7 @@ for station in stations:
     plt.xlabel('Date')
     plt.ylabel('Vertical Visibility (skyl1)')
     plt.xticks(rotation=30)
-    plt.title("Trees: 100 Max Depth: {} Random Forest \n Training MSE: {:0.3f} Test MSE: {:0.3f}".format(m_depth,train_mse,test_mse))
+    plt.title("{} \n Trees: 100 Max Depth: {} Random Forest \n Training MSE: {:0.3f} Test MSE: {:0.3f}".format(station_name,m_depth,train_mse,test_mse))
     plt.savefig("data exploration/{}_train_skyl1.png".format(station),bbox_inches='tight',dpi=300)
     plt.clf()
 
@@ -292,7 +318,7 @@ for station in stations:
     #### Grafico de Importancias
     plt.subplots(figsize=(12,5))
     plt.bar(importances['Regressor'],height=importances['Importance'])
-    plt.title('Vertical Visibility of {} Model \n Relative Importance of the Regressors'.format(station))
+    plt.title('Vertical Visibility of {} \n Relative Importance of the Regressors'.format(station_name))
     plt.xticks(rotation=90,ha='right')
     plt.savefig("data exploration/{}_importances_skyl1.png".format(station),bbox_inches='tight',dpi=300)
     plt.clf()
