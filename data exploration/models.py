@@ -214,6 +214,7 @@ for station in stations:
     df = pd.read_sql(query, engine.connect(), parse_dates=('day_hour',))
     df = df.sort_values(by=['day_hour'],ascending=True).reset_index(drop=True)
     df = df.drop_duplicates(subset='day_hour')
+    df['station_name']=df['station'].map(air_names)
     df['skyl1']=np.log(df['skyl1']+1)
     print('Clean Data of {} Succesfully Fetched From AWS RDS'.format(station),end="\n\n")
 

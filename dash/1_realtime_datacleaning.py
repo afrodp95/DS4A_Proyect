@@ -55,6 +55,7 @@ def quantile_replace(x,q15=None,q85=None):
         pass
     else:
         q85 = np.quantile(x,0.85)
+        
     ## Find Index of elements outside boundaries
     mask = (x<q15) & (x>q85)
     ind = x[mask].index
