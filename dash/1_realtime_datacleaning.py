@@ -44,10 +44,17 @@ for col in numeric_cols:
 
 print('Replacing Outliers',end='\n\n')
 
-def quantile_replace(x):
+def quantile_replace(x,q15=None,q85=None):
     ## Find Quantiles
-    q15 = np.quantile(x,0.15)
-    q85 = np.quantile(x,0.85)
+    if q15:
+        pass
+    else:
+        q15 = np.quantile(x,0.15)
+    
+    if q85:
+        pass
+    else:
+        q85 = np.quantile(x,0.85)
     ## Find Index of elements outside boundaries
     mask = (x<q15) & (x>q85)
     ind = x[mask].index
@@ -145,6 +152,12 @@ for airport in airports:
     df_list.append(df2_full)
 
 df = pd.concat(df_list,axis=0,ignore_index=True)
+
+### Filter Only Last 60 days To write in AWS RDB
+max_date = df['day_hour'].max()
+minus_60d = max_date - timedelta(days=60)
+df = df[df['day_hour']>=str(minus_60d)]
+
 
 print('Writing to AWS RDB',end='\n\n')
 
