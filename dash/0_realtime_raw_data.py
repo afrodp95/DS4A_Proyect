@@ -24,8 +24,11 @@ SERVICE = "http://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?"
 start=datetime.datetime.now()
 #La fecha final es manana a las 00:00
 end=start + timedelta(days=1)
-startts = datetime.datetime(start.year,start.month,start.day)
-endts = datetime.datetime(end.year,end.month,end.day)
+#startts = datetime.datetime(start.year,start.month,start.day)
+#endts = datetime.datetime(end.year,end.month,end.day)
+
+startts = datetime.datetime(2017,1,1)
+endts = datetime.datetime(2019,12,8)
 
 ##################################
 #funcion para descargar la data
@@ -50,8 +53,8 @@ service += startts.strftime("year1=%Y&month1=%m&day1=%d&")
 service += endts.strftime("year2=%Y&month2=%m&day2=%d&")
 #definicion de network y estaciones de donde descargaremos
 networks = ["CO__ASOS"]
-stations=["SKAR","SKBO","SKBG","SKCL","SKCC","SKCG","SKPE","SKSP","SKSM","SKRG"]
-#armenia,Bogota,Bucaramanga,Cali,Cucuta,Cartagena,Pereira,SanAndres,SMarta,Rionegro
+stations=["SKAR","SKBO","SKBG","SKCL","SKCC","SKCG","SKPE","SKSP","SKSM","SKRG,"SKBQ"]
+#armenia,Bogota,Bucaramanga,Cali,Cucuta,Cartagena,Pereira,SanAndres,SMarta,Rionegro, Barranquilla
 
 #iniciar la descarga por cada estacion
 df = pd.DataFrame()
@@ -87,6 +90,7 @@ print(df.shape)
 engine = create_engine('postgresql://ds4a_18:ds4a2019@ds4a18.cmlpaj0d1yqv.us-east-2.rds.amazonaws.com:5432/Airports_ds4a')
 #subir DataFrame a la base de datos
 df.to_sql(name='dataraw', con=engine, if_exists = 'append', index=False, chunksize=10000)
+print("data stored")
 #eliminacion de duplicados con el query. Esta como una funcion en la base de datos
 #try:
 message=engine.execute('select delete_duplicates()')
