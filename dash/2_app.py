@@ -42,7 +42,8 @@ air_names = {#'SKAR':'Aeropuerto Internacional el Edén (Armenia - Quindío)',
              'SKPE':'Aeropuerto Internacional Matecaña (Pereira - Risaralda)',
              'SKSM': 'Aeropuerto Internacional Simón Bolivar (Santa Marta - Magdalena)',
              'SKSP':'Aeropuerto Internacional Gustavo Rojas Pinilla (San Andrés - Colombia)',
-             'SKRG':'Aeropuerto Internacional José María Córdova (Rionegro - Antioquia)'}
+             'SKRG':'Aeropuerto Internacional José María Córdova (Medellín - Antioquia)',
+             'SKBQ':'Aeropuerto Internacional Ernesto Cortissoz (Barranquilla - Atlantico)'}
 
 df['station_name'] = df['station'].map(air_names)
 
