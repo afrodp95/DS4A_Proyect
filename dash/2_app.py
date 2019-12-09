@@ -27,6 +27,12 @@ df = df[df['station'].isin(stations)]
 #df = pd.read_csv("dash/airports_clean.csv.gz",encoding='UTF-8',parse_dates=['day_hour',],index_col=0)
 # df.columns
 
+###############
+### Import Tresholds
+
+tresh = pd.read_csv('dash/treshold.csv')
+## Info is in meters convert horizontal to miles and vertical to feet
+tresh['value'] = np.where(tresh['variable']=='vsby',tresh['value']/1609.344,tresh['value']*3.28084)
 
 ################
 #### Unificar Nombres de Aeropuertos
@@ -67,6 +73,7 @@ vars_list = [
     {'label':'Apparent Temperature (Wind Chill or Heat Index in F)','value':'feel'},
     
 ] 
+
 
 
 ################
@@ -123,6 +130,12 @@ app.layout = html.Div(children=[
                                         dcc.Dropdown(id='select-airport',
                                                      options=[{'label':label,'value':val} for label, val in zip(df['station_name'].unique(),df['station'].unique())],
                                                      value='SKBO'        
+                                        ),
+                                        html.H6("Select Output"),
+                                        dcc.Dropdown(id="select-output",
+                                                     options=[{'label':'Horizontal Visibility','value':'vsby'},
+                                                              {'label':'Vertical Visibility','value':'skyl1'}],
+                                                     value='vsby'
                                         )
                                     ]
                                 ),
@@ -166,6 +179,12 @@ app.layout = html.Div(children=[
                                 )
                             ] 
                         )
+                    ]
+                ),
+                html.Div(
+                    className="twelve columns card",
+                    children=[
+                        dcc.Graph(id="heatmap-plot")
                     ]
                 ),
                 html.Div(
@@ -316,6 +335,9 @@ def get_model(station,variable):
     rf = pickle.load(open('dash/'+model_name, 'rb'))
     return rf
 
+def get_treshold(station, variable):
+    x = tresh.loc[(tresh['station']==station) & (tresh['variable']==variable),'value'].values[0]
+    return x
 
 def create_plot_data(df,station,variable):
     print('Preparing Data For {} {} Plotting'.format(station,variable),end="\n\n")
@@ -360,16 +382,20 @@ def create_plot_data(df,station,variable):
     ]
 )
 
-
 def update_hvis_plot(station):
     dff = create_plot_data(df=df,station=station,variable='vsby')
+    lim = get_treshold(station=station,variable='vsby')
+    limit = pd.DataFrame({'day_hour':dff['day_hour'],'limit':lim})
     plot_data = []
     for key, data in dff.groupby('type'):
         plot_data.append(
             go.Scatter(x=data['day_hour'],y=data['vsby'],name=key,mode='lines+markers')
         )
+    plot_data.append(
+        go.Scatter(x=limit['day_hour'],y=limit['limit'],name='Limit',mode='markers')  
+    )  
     layout = go.Layout(title="Horizontal Visibility Prediction",
-                       yaxis={"title":"Horizontal Visibility"},
+                       yaxis={"title":"Horizontal Visibility (Miles)"},
                        xaxis={"title":"Date"})   
     return {
         "data":plot_data,
@@ -389,13 +415,18 @@ def update_hvis_plot(station):
 
 def update_vvis_plot(station):
     dff = create_plot_data(df=df,station=station,variable='skyl1')
+    lim = get_treshold(station=station,variable='skyl1')
+    limit = pd.DataFrame({'day_hour':dff['day_hour'],'limit':lim})
     plot_data = []
     for key, data in dff.groupby('type'):
         plot_data.append(
             go.Scatter(x=data['day_hour'],y=data['skyl1'],name=key,mode='lines+markers')
         )
+    plot_data.append(
+        go.Scatter(x=limit['day_hour'],y=limit['limit'],name='Limit',mode='markers')  
+    )  
     layout = go.Layout(title="Vertical Visibility Prediction",
-                       yaxis={"title":"Vertical Visibility"},
+                       yaxis={"title":"Vertical Visibility (Feet)"},
                        xaxis={"title":"Date"})   
     return {
         "data":plot_data,
@@ -403,11 +434,46 @@ def update_vvis_plot(station):
     }    
 
 
-### Horizontal Visibility Prediction
+#########
+### Call Back for the Heat Map
+
+def create_hm_pivot(df,station,variable):
+    print('Preparing Data For {} {} Plotting Heat Map'.format(station,variable),end="\n\n")
+    dff = df[df['station']==station].sort_values(by=['day_hour'],ascending=True).reset_index(drop=True).drop_duplicates(subset='day_hour')
+    fin = dff['day_hour'].max() #datetime.date.today()
+    dff['day']=dff['day_hour'].dt.weekday
+    keys={0:'Monday',1:'Tuesday',2:'Wednesday',3:'Thursday',4:'Friday',5:'Saturday',6:'Sunday'}
+    dff['day'] = dff['day'].replace(keys)
+    ini = fin - datetime.timedelta(days=365)
+    rango = dff[(dff['day_hour'] > ini) & (dff['day_hour'] < fin)]
+    dat2=pd.pivot_table(rango,index='day', columns=rango['day_hour'].dt.hour, values=variable, aggfunc=np.mean)
+    return dat2
 
 
 
-# min_date = str(max_date-datetime.timedelta(hours=6))
+@app.callback(
+    Output('heatmap-plot', 'figure'),
+    [ 
+    Input('select-airport', 'value'),
+    Input('select-output','value')
+    ]
+)
+
+def update_hm(station,variable):
+    dff = create_hm_pivot(df=df,station=station,variable=variable)
+    if variable == 'vsby':
+        plot_title = 'Horizontal Visibility Heatmap'
+    else:
+        plot_title = 'Vertical Visibility Heatmap'
+    plot_data = []
+    plot_data.append(go.Heatmap(z=dff.values,y=dff.index,x=dff.columns,colorscale='Magma'))
+    layout = go.Layout(title=plot_title, yaxis={"title":'Weekday'}, xaxis={"title":"Hour"})   
+    return {
+        "data":plot_data,
+        "layout": layout
+    }
+
+
 
 ###########
 ### Run App
