@@ -7,12 +7,13 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 import plotly.graph_objects as go
+import plotly.figure_factory as ff
 from dash.dependencies import Input, Output
 import datetime
 import dash_table
 import pickle
 from sklearn.ensemble import RandomForestRegressor
-#import apputils as apputils
+
 
 
 ##############
@@ -20,9 +21,14 @@ from sklearn.ensemble import RandomForestRegressor
 ## SKMR DELETED...
 stations = ['SKBO','SKBG','SKCL','SKCC','SKCG','SKPE','SKSP','SKSM','SKRG']
 engine = create_engine('postgresql://ds4a_18:ds4a2019@ds4a18.cmlpaj0d1yqv.us-east-2.rds.amazonaws.com:5432/Airports_ds4a')
+#in_str = ",".join(['"' + s + '"' for s in stations])
+#in_str = ",".join(stations)
+#query = "SELECT * FROM dataclean WHERE station IN ({});".format(in_str)
 query = "SELECT * FROM dataclean"
 df = pd.read_sql(query, engine.connect(), parse_dates=('day_hour',))
 df = df[df['station'].isin(stations)]
+df['station'].value_counts()
+
 
 #df = pd.read_csv("dash/airports_clean.csv.gz",encoding='UTF-8',parse_dates=['day_hour',],index_col=0)
 # df.columns
@@ -75,7 +81,6 @@ vars_list = [
 ] 
 
 
-
 ################
 #### Lista de diccionarios de Nombre De Variables Para el la Tabla 
 
@@ -95,7 +100,6 @@ vars_list_dt = [
     {'name':'Apparent Temperature (Wind Chill or Heat Index in F)','id':'feel'},
     
 ] 
-
 
 
 ################
@@ -131,12 +135,12 @@ app.layout = html.Div(children=[
                                                      options=[{'label':label,'value':val} for label, val in zip(df['station_name'].unique(),df['station'].unique())],
                                                      value='SKBO'        
                                         ),
-                                        html.H6("Select Output"),
+                                        html.H6('Select Output'),   
                                         dcc.Dropdown(id="select-output",
-                                                     options=[{'label':'Horizontal Visibility','value':'vsby'},
-                                                              {'label':'Vertical Visibility','value':'skyl1'}],
-                                                     value='vsby'
-                                        )
+                                                    options=[{'label':'Horizontal Visibility','value':'vsby'},
+                                                            {'label':'Vertical Visibility','value':'skyl1'}],
+                                                    value='vsby'
+                                        )      
                                     ]
                                 ),
                                 html.Div(
@@ -178,6 +182,36 @@ app.layout = html.Div(children=[
                                     ]
                                 )
                             ] 
+                        )
+                    ]
+                ),
+                html.Div(
+                    className="twelve columns card",
+                    children=[
+                        html.Div(
+                            className="padding row",
+                            children=[
+                                html.Div(
+                                    className="four columns card",
+                                    children=[
+                                        html.Div(
+                                            html.H6('Select Airports'),
+                                            dcc.Dropdown(
+                                                id='select-airports',
+                                                options=[{'label':label,'value':val} for label, val in zip(df['station_name'].unique(),df['station'].unique())],
+                                                value='SKBO',
+                                                multi=True        
+                                            ),
+                                            html.H6('Select Variable to Compare'),   
+                                            dcc.Dropdown(id="select-output2",
+                                                        options=[{'label':'Horizontal Visibility','value':'vsby'},
+                                                                {'label':'Vertical Visibility','value':'skyl1'}],
+                                                        value='vsby'
+                                            )
+                                        )
+                                    ]
+                                )
+                            ]
                         )
                     ]
                 ),
@@ -303,12 +337,12 @@ def prepare_pred_data(df,station,variable):
     df_fin = pd.concat([date]+lagged_lists,axis=1)
     df_fin = df_fin.sort_values(by=['day_hour'],ascending=False).reset_index(drop=True)
     df_fin.dropna(inplace=True)
-    df_fin = df_fin.head(6)
+    df_fin = df_fin.head(7)
 
     ## Crear Fechas de Prediccion
     max_date = df_air['day_hour'].max()
     start_date = max_date+datetime.timedelta(hours=1)
-    end_date = max_date+datetime.timedelta(hours=6)
+    end_date = max_date+datetime.timedelta(hours=7)
     predict_dates = pd.date_range(start=str(start_date),end=str(end_date),freq='H').to_list()
     df_fin['day_hour']=predict_dates
     
@@ -339,12 +373,12 @@ def get_treshold(station, variable):
     x = tresh.loc[(tresh['station']==station) & (tresh['variable']==variable),'value'].values[0]
     return x
 
-def create_plot_data(df,station,variable):
+def create_plot_data(df,station,variable,lag=20):
     print('Preparing Data For {} {} Plotting'.format(station,variable),end="\n\n")
     df_air = df[df['station']==station].sort_values(by=['day_hour'],ascending=True).reset_index(drop=True).drop_duplicates(subset='day_hour')
     ## Seleccionar Ultimas 48 horas de info
     end_date = df_air['day_hour'].max()
-    start_date = end_date-datetime.timedelta(hours=20)
+    start_date = end_date-datetime.timedelta(hours=lag)
     date_range = pd.date_range(start=str(start_date),end=str(end_date),freq='H').to_list()
     df_air = df_air.loc[df_air['day_hour'].isin(date_range),['day_hour',variable]]
     df_air['type']='Current'
@@ -361,7 +395,7 @@ def create_plot_data(df,station,variable):
     df_to_pred['type']='Prediction'
     ## Link 
     df_link = df_to_pred.head(1)
-    df_link['type']='Current'
+    df_link['type']='Prediction'
     ## Concatenar Data Sets
     df_out = pd.concat([df_air,df_link,df_to_pred],ignore_index=True)
     
@@ -473,8 +507,40 @@ def update_hm(station,variable):
         "layout": layout
     }
 
+########### 
+### Call Back For Informative Data Table 
+
+def create_sem_table(stations,variable,lag=5):
+    dff_list = []
+    for station in stations:
+        a = create_plot_data(df=df,station=station,variable=variable,lag=lag)
+        a = a.drop_duplicates(subset='day_hour',keep='last')
+        a['station']=station
+        dff_list.append(a)
+    dff = pd.concat(dff_list,axis=0)
+    agg = dff.pivot_table(index=['station'],columns=['day_hour'],values=variable,aggfunc=np.mean)
+
+# def create_sem_hmap(stations,variable):
+#     dff = create_sem_table(stations=stations,variable=variable)
+#     data = []
+#     for station in dff.index:
+    
+#     data.append(
+#         ff.create_annotated_heatmap()
+#     ) 
+
+def create_sem_dt(stations,variable):
+    dff = create_sem_table(stations=stations,variable=variable)
+    lims = {}
+    for station in stations:
+        lims[station]=get_treshold(station=station,variable=variable)
 
 
+
+# a = df[df['day_hour']>'2019-12-06'].pivot_table(index=['station'],columns=['day_hour'],values=['vsby'],aggfunc=np.mean)
+# a.to_dict('records')
+
+# a.loc['SKBG']
 ###########
 ### Run App
 
